@@ -1,31 +1,65 @@
-import { TestBed } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  fakeAsync,
+  TestBed,
+  tick,
+} from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { AppComponent } from './app.component';
+import { RegisterService } from './services/register/register.service';
+import { of } from 'rxjs';
 
 describe('AppComponent', () => {
+  let registerService: RegisterService;
+  let fixture: ComponentFixture<AppComponent>;
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [
-        AppComponent
-      ],
+      declarations: [AppComponent],
+      imports: [HttpClientTestingModule]
     }).compileComponents();
   });
 
+  beforeEach(() => {
+    fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    registerService = TestBed.inject(RegisterService);
+  });
+
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
+    fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
   });
 
-  it(`should have as title 'Angular-Test-fromEvent-and-debounceTime'`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('Angular-Test-fromEvent-and-debounceTime');
-  });
+  describe('fromEvent and debounceTime', () => {
+    let spy: jasmine.Spy;
+    let input: HTMLInputElement;
 
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.content span')?.textContent).toContain('Angular-Test-fromEvent-and-debounceTime app is running!');
+    beforeEach(() => {
+      spy = spyOn(registerService, 'register').and.returnValue(of('done'));
+      input = fixture.debugElement.query(By.css('input'))
+        .nativeElement as HTMLInputElement;
+    });
+
+    it(`version 1'`, fakeAsync(() => {
+      input.value = '123456';
+      input.dispatchEvent(new Event('input'));
+
+      tick(500);
+
+      expect(spy).toHaveBeenCalledWith('123456', 'test@mail.com');
+    }));
+
+    it(`version 2'`, (done) => {
+      input.value = '789101112';
+      input.dispatchEvent(new Event('input'));
+
+      fixture.whenStable().then(() => {
+        expect(spy).toHaveBeenCalledWith('789101112', 'test@mail.com');
+        done();
+      });
+    });
   });
 });
